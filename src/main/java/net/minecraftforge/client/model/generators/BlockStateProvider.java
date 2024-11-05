@@ -170,23 +170,27 @@ public abstract class BlockStateProvider implements DataProvider {
         return models().cubeAll(name(block), blockTexture(block));
     }
 
-    public void cubeAllMirrored(Block block, String name, ResourceLocation texture) {
-        // Normal
-        BlockModelBuilder normalModel = models().cubeAll(name, texture);
+    public ModelFile cubeMirroredAll(Block block, String name, ResourceLocation texture) {
+        // Create the standard cube model
+        ModelFile standardModel = models().cubeAll(name, texture);
 
-        // Mirror
-        BlockModelBuilder mirroredModel = models().withExistingParent(name + "_mirrored", mcLoc("block/cube_mirrored_all"))
+        // Create the mirrored model by referencing Mojang's mirrored cube template
+        ModelFile mirroredModel = models().withExistingParent(name + "_mirrored", mcLoc("block/cube_mirrored_all"))
                 .texture("all", texture);
 
-        // Generation of blockstate with mirror and normal mode
+        // Generate blockstate with both normal and mirrored models in different rotations
         getVariantBuilder(block)
                 .forAllStates(state -> new ConfiguredModel[] {
-                        ConfiguredModel.builder().modelFile(normalModel).build(),
+                        ConfiguredModel.builder().modelFile(standardModel).build(),
                         ConfiguredModel.builder().modelFile(mirroredModel).build(),
-                        ConfiguredModel.builder().modelFile(normalModel).rotationY(180).build(),
+                        ConfiguredModel.builder().modelFile(standardModel).rotationY(180).build(),
                         ConfiguredModel.builder().modelFile(mirroredModel).rotationY(180).build()
                 });
+
+        // Return the standard model as a reference
+        return standardModel;
     }
+
 
 
     public void simpleBlock(Block block) {
