@@ -1,8 +1,3 @@
-/*
- * Copyright (c) Forge Development LLC and contributors
- * SPDX-License-Identifier: LGPL-2.1-only
- */
-
 package net.minecraftforge.network;
 
 import net.minecraft.network.Connection;
@@ -29,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -41,8 +37,12 @@ public class NetworkRegistry {
     static final Logger LOGGER = LogManager.getLogger();
     static final Marker NETREGISTRY = MarkerManager.getMarker("NETREGISTRY");
 
-    private static Map<ResourceLocation, NetworkInstance> instances = Collections.synchronizedMap(new HashMap<>());
-    private static Map<ResourceLocation, NetworkInstance> byName = Collections.synchronizedMap(new HashMap<>());
+    // Use ConcurrentHashMap for thread safety
+    private static final Map<ResourceLocation, NetworkInstance> instances = new ConcurrentHashMap<>();
+    private static final Map<ResourceLocation, NetworkInstance> byName = new ConcurrentHashMap<>();
+
+    // Use volatile to ensure visibility across threads
+    private static volatile boolean lock = false;
 
     public static boolean acceptsVanillaClientConnections() {
         return listRejectedVanillaMods(n -> n.clientAcceptedVersions).isEmpty() && DataPackRegistriesHooks.getSyncedCustomRegistries().isEmpty();
@@ -58,7 +58,8 @@ public class NetworkRegistry {
     }
 
     static Map<ResourceLocation, ServerStatusPing.ChannelData> buildChannelVersionsForListPing() {
-        var ret = new HashMap<ResourceLocation, ServerStatusPing.ChannelData>();
+        // Use ConcurrentHashMap to match the thread safety context of the class
+        var ret = new ConcurrentHashMap<ResourceLocation, ServerStatusPing.ChannelData>();
         for (var channel : instances.values()) {
             ret.put(channel.getChannelName(), channel.pingData);
         }
@@ -69,7 +70,9 @@ public class NetworkRegistry {
         var results = new ArrayList<String>();
         for (var net : instances.values()) {
             boolean test = testFunction.apply(net).accepts(VersionTest.Status.VANILLA, -1);
-            LOGGER.debug(NETREGISTRY, "Channel '{}' : Vanilla acceptance test: {}", net.getChannelName(), test ? "ACCEPTED" : "REJECTED");
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(NETREGISTRY, "Channel '{}' : Vanilla acceptance test: {}", net.getChannelName(), test ? "ACCEPTED" : "REJECTED");
+            }
             if (!test)
                 results.add(net.getChannelName().toString());
         }
@@ -88,7 +91,7 @@ public class NetworkRegistry {
         var originName = fromClient ? "client" : "server";
 
         Set<ResourceLocation> missing = new HashSet<>();
-        Map<ResourceLocation, NetworkMismatchData.Version> results = new HashMap<>();
+        Map<ResourceLocation, NetworkMismatchData.Version> results = new ConcurrentHashMap<>();
         for (var net : instances.values()) {
             var name = net.getChannelName();
             VersionTest test = fromClient ? net.clientAcceptedVersions : net.serverAcceptedVersions;
@@ -101,7 +104,9 @@ public class NetworkRegistry {
             }
 
             boolean accepted = test.accepts(status, version);
-            LOGGER.debug(NETREGISTRY, "Channel '{}' : Version test of '{} {}' from {} : {}", name, status, version, originName, accepted ? "ACCEPTED" : "REJECTED");
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(NETREGISTRY, "Channel '{}' : Version test of '{} {}' from {} : {}", name, status, version, originName, accepted ? "ACCEPTED" : "REJECTED");
+            }
 
             if (!accepted) {
                 if (status == VersionTest.Status.MISSING)
@@ -113,7 +118,7 @@ public class NetworkRegistry {
 
         if (!results.isEmpty() || !missing.isEmpty()) {
             LOGGER.error(NETREGISTRY, "Channels [{}] rejected their {} side version number",
-                Stream.concat(missing.stream(), results.keySet().stream()).map(Object::toString).collect(Collectors.joining(",")), originName);
+                    Stream.concat(missing.stream(), results.keySet().stream()).map(Object::toString).collect(Collectors.joining(",")), originName);
             return new NetworkMismatchData(results, missing, !fromClient, null);
         }
 
@@ -134,7 +139,9 @@ public class NetworkRegistry {
             }
 
             boolean accepted = net.serverAcceptedVersions.accepts(status, version);
-            LOGGER.debug(NETREGISTRY, "Channel '{}' : Version test of '{} {}' during listping : {}", net.getChannelName(), status, version, accepted ? "ACCEPTED" : "REJECTED");
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(NETREGISTRY, "Channel '{}' : Version test of '{} {}' during listping : {}", net.getChannelName(), status, version, accepted ? "ACCEPTED" : "REJECTED");
+            }
 
             if (!accepted)
                 rejected.add(net.getChannelName().toString());
@@ -161,7 +168,6 @@ public class NetworkRegistry {
         return true;
     }
 
-    static boolean lock = false;
     public static void lock() {
         lock = true;
     }
@@ -172,7 +178,7 @@ public class NetworkRegistry {
         var channel = connection.channel();
         for (var inst : instances.values()) {
             if (inst.attributes != null)
-                inst.attributes.forEach((k, v) -> ((Attribute<Object>)channel.attr(k)).compareAndSet(null, (Object)v.apply(connection)));
+                inst.attributes.forEach((k, v) -> ((Attribute<Object>)channel.attr(k)).compareAndSet(null, v.apply(connection)));
             if (inst.channelHandler != null)
                 inst.channelHandler.accept(connection);
         }
@@ -196,20 +202,17 @@ public class NetworkRegistry {
 
     static void register(NetworkInstance instance, ResourceLocation name) {
         checkLock(instance);
-        if (NetworkRegistry.byName.containsKey(name))
+        if (NetworkRegistry.byName.putIfAbsent(name, instance) != null) {
             error("Payload name " + name + " already registered.");
-
-        byName.put(name, instance);
+        }
     }
 
     static void register(NetworkInstance instance) {
         checkLock(instance);
-
         var name = instance.getChannelName();
-        if (NetworkRegistry.instances.containsKey(name))
+        if (NetworkRegistry.instances.putIfAbsent(name, instance) != null) {
             error("Channel " + name + " already registered.");
-
-        instances.put(name, instance);
+        }
     }
 
     private static void checkLock(NetworkInstance instance) {
