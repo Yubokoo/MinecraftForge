@@ -11,27 +11,20 @@ import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.BlockElement;
 import net.minecraft.client.renderer.block.model.BlockElementFace;
 import net.minecraft.client.renderer.block.model.BlockFaceUV;
-import net.minecraft.client.renderer.block.model.BlockModel;
 import net.minecraft.client.renderer.block.model.FaceBakery;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.SpriteContents;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.model.BakedModel;
-import net.minecraft.client.resources.model.BuiltInModel;
 import net.minecraft.client.resources.model.Material;
-import net.minecraft.client.resources.model.ModelBaker;
 import net.minecraft.client.resources.model.ModelBakery;
 import net.minecraft.client.resources.model.ModelState;
-import net.minecraft.client.resources.model.SpecialModels;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.InventoryMenu;
-import net.minecraftforge.client.model.ElementsModel;
 import net.minecraftforge.client.model.IModelBuilder;
 import net.minecraftforge.client.model.IQuadTransformer;
 import net.minecraftforge.client.model.QuadTransformers;
 import net.minecraftforge.client.model.SimpleModelState;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 
@@ -88,32 +81,6 @@ public class UnbakedGeometryHelper {
 
         return new Material(InventoryMenu.BLOCK_ATLAS, ResourceLocation.parse(tex));
     }
-
-    /**
-     * Helper for baking {@link BlockModel} instances. Handles baking custom geometries and deferring item model baking.
-     */
-    /*
-    @ApiStatus.Internal
-    public static BakedModel bake(BlockModel blockModel, ModelBaker modelBaker, BlockModel owner, Function<Material, TextureAtlasSprite> spriteGetter, ModelState modelState, boolean guiLight3d) {
-        IUnbakedGeometry<?> customModel = blockModel.customData.getCustomGeometry();
-        if (customModel != null)
-            return customModel.bake(blockModel.customData, modelBaker, spriteGetter, modelState);
-
-        // Handle vanilla item models here, since vanilla has a shortcut for them
-        if (blockModel.getRootModel() == SpecialModels.GENERATED_MARKER)
-            return ModelBakery.ITEM_MODEL_GENERATOR.generateBlockModel(spriteGetter, blockModel).bake(modelBaker, blockModel, spriteGetter, modelState, guiLight3d);
-
-        if (blockModel.getRootModel() == SpecialModels.BLOCK_ENTITY_MARKER) {
-            var particleSprite = spriteGetter.apply(blockModel.getMaterial("particle"));
-            return new BuiltInModel(blockModel.getTransforms(), particleSprite, blockModel.getGuiLight().lightLikeBlock());
-        }
-
-        @SuppressWarnings("deprecation")
-        var elements = blockModel.getElements();
-        var elementsModel = new ElementsModel(elements);
-        return elementsModel.bake(blockModel.customData, modelBaker, spriteGetter, modelState);
-    }
-    */
 
     /**
      * Creates a list of {@linkplain BlockElement block elements} in the shape of the specified sprite contents.

@@ -85,7 +85,7 @@ public abstract class BaseTestMod {
     }
 
     @SuppressWarnings("unchecked")
-    private static <E extends Throwable, R> R sneak(Throwable e) throws E {
+    protected static <E extends Throwable, R> R sneak(Throwable e) throws E {
         throw (E)e;
     }
 }

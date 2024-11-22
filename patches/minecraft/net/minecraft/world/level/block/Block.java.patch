@@ -91,13 +91,18 @@
      }
  
      public void setPlacedBy(Level p_49847_, BlockPos p_49848_, BlockState p_49849_, @Nullable LivingEntity p_49850_, ItemStack p_49851_) {
-@@ -375,6 +_,7 @@
+@@ -375,10 +_,12 @@
          p_49822_.setDeltaMovement(p_49822_.getDeltaMovement().multiply(1.0, 0.0, 1.0));
      }
  
 +    /** @deprecated Forge use {@link IForgeBlock#getCloneItemStack(BlockState, HitResult, LevelReader, BlockPos, Player)}*/
      public ItemStack getCloneItemStack(LevelReader p_312699_, BlockPos p_49824_, BlockState p_49825_) {
          return new ItemStack(this);
+     }
+ 
++    /** @deprecated Forge use {@link IForgeStateBlock#getFriction(Level, BlockPos, Entity)}*/
+     public float getFriction() {
+         return this.friction;
      }
 @@ -449,7 +_,7 @@
              this.item = Item.byBlock(this);

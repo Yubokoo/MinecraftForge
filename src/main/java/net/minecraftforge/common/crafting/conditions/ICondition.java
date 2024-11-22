@@ -10,17 +10,13 @@ import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.MapCodec;
 
 import net.minecraft.core.Holder;
-import net.minecraft.core.Registry;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 
 import org.jetbrains.annotations.ApiStatus;

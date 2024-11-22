@@ -318,6 +318,7 @@ class NamespacedWrapper<T> extends MappedRegistry<T> implements ILockableRegistr
             throw new IllegalStateException("Unbound tags in registry " + this.key() + ": " + unbound);
 
         this.frozenTags = MappedRegistry.TagSet.fromMap(this.tags);
+        this.delegate.onBindTags(this.tags);
         this.refreshTagsInHoldersForge();
         return this;
     }
@@ -378,6 +379,14 @@ class NamespacedWrapper<T> extends MappedRegistry<T> implements ILockableRegistr
             tag.bind(List.of());
     }
 
+    void bindAllUnboundTagsToEmpty() {
+        this.validateWrite();
+        for (var tag : this.tags.values()) {
+            if (!tag.isBound())
+                tag.bind(List.of());
+        }
+    }
+
     @Override
     public Registry.PendingTags<T> prepareTagReload(TagLoader.LoadResult<T> data) {
         if (!this.frozen)
@@ -393,6 +402,23 @@ class NamespacedWrapper<T> extends MappedRegistry<T> implements ILockableRegistr
                 existing = this.createTag(key);
             _old.put(key, existing);
             _new.put(key, List.copyOf(entry.getValue()));
+        }
+
+        for (var entry : this.optionalTags.entries()) {
+            var key = entry.getKey();
+            if (data.tags().containsKey(key))
+                continue;
+
+            var value = entry.getValue().get();
+            var holder = this.getHolder(value).orElse(null);
+            if (holder == null)
+                continue;
+
+            var existing = this.tags.get(key);
+            if (existing == null)
+                existing = this.createTag(key);
+            _old.put(key, existing);
+            _new.put(key, List.of(holder));
         }
 
         var oldBindings = _old.build();
@@ -444,6 +470,7 @@ class NamespacedWrapper<T> extends MappedRegistry<T> implements ILockableRegistr
                 }
 
                 NamespacedWrapper.this.frozenTags = MappedRegistry.TagSet.fromMap(oldBindings);
+                NamespacedWrapper.this.delegate.onBindTags(NamespacedWrapper.this.tags);
                 NamespacedWrapper.this.refreshTagsInHoldersForge();
             }
         };

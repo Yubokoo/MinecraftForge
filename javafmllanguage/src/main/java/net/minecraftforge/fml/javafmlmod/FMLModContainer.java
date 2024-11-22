@@ -13,6 +13,7 @@ import net.minecraftforge.eventbus.api.IEventListener;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModLoadingException;
 import net.minecraftforge.fml.ModLoadingStage;
+import net.minecraftforge.fml.config.IConfigEvent;
 import net.minecraftforge.fml.event.IModBusEvent;
 import net.minecraftforge.forgespi.language.IModInfo;
 import net.minecraftforge.forgespi.language.ModFileScanData;
@@ -29,7 +30,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.jar.Attributes;
 
 public class FMLModContainer extends ModContainer {
@@ -47,7 +47,6 @@ public class FMLModContainer extends ModContainer {
         this.scanResults = modFileScanResults;
         activityMap.put(ModLoadingStage.CONSTRUCT, this::constructMod);
         this.eventBus = BusBuilder.builder().setExceptionHandler(FMLModContainer::onEventFailed).setTrackPhases(false).markerType(IModBusEvent.class).useModLauncher().build();
-        this.configHandler = Optional.of(ce->this.eventBus.post(ce.self()));
         this.contextExtension = () -> context;
         try {
             var moduleName = info.getOwningFile().moduleName();
@@ -188,5 +187,15 @@ public class FMLModContainer extends ModContainer {
             LOGGER.error(LOADING,"Caught exception during event {} dispatch for modid {}", e, this.getModId(), t);
             throw new ModLoadingException(modInfo, modLoadingStage, "fml.modloading.errorduringevent", t);
         }
+    }
+
+    @Override
+    public void dispatchConfigEvent(IConfigEvent event) {
+        this.eventBus.post(event.self());
+    }
+
+    @Override
+    public String toString() {
+        return "FMLModContainer[" + this.getModInfo().getModId() + ", " + this.getClass().getName() + "]";
     }
 }

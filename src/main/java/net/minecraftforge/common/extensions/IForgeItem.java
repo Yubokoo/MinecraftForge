@@ -24,6 +24,7 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.level.Level;
@@ -333,9 +334,29 @@ public interface IForgeItem {
      * @param stack       the item stack to be enchanted
      * @param enchantment the enchantment to be applied
      * @return true if the enchantment can be applied to this item
+     *
+     * @deprecated Use {@link IForgeItemStack#canApplyAtEnchantingTable(Holder)}
      */
+    @Deprecated(forRemoval = true, since = "1.21.3")
     default boolean canApplyAtEnchantingTable(ItemStack stack, Enchantment enchantment) {
         return enchantment.isPrimaryItem(stack);
+    }
+
+    /**
+     * Checks whether an item can be enchanted with a certain enchantment. This
+     * applies specifically to enchanting an item in the enchanting table and is
+     * called when retrieving the list of possible enchantments for an item.
+     * Enchantments may additionally (or exclusively) be doing their own checks in
+     * {@link Enchantment#canApplyAtEnchantingTable(ItemStack)};
+     * check the individual implementation for reference. By default this will check
+     * if the enchantment type is valid for this item type.
+     *
+     * @param stack       the item stack to be enchanted
+     * @param enchantment the enchantment to be applied
+     * @return true if the enchantment can be applied to this item
+     */
+    default boolean canApplyAtEnchantingTable(ItemStack stack, Holder<Enchantment> enchantment) {
+        return canApplyAtEnchantingTable(stack, enchantment.value());
     }
 
     /**

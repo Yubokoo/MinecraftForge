@@ -18,6 +18,15 @@
                          f = Math.max(f, fluidstate.getHeight(this.level(), blockpos$mutableblockpos));
                      }
  
+@@ -522,7 +_,7 @@
+                                     voxelshape,
+                                     BooleanOp.AND
+                                 )) {
+-                                f += blockstate.getBlock().getFriction();
++                                f += blockstate.getFriction(this.level(), blockpos$mutableblockpos, this);
+                                 k1++;
+                             }
+                         }
 @@ -551,7 +_,7 @@
                  for (int i2 = i1; i2 < j1; i2++) {
                      blockpos$mutableblockpos.set(k1, l1, i2);

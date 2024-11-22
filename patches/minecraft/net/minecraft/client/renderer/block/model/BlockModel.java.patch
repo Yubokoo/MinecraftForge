@@ -30,7 +30,7 @@
      public boolean hasAmbientOcclusion() {
          if (this.hasAmbientOcclusion != null) {
              return this.hasAmbientOcclusion;
-@@ -130,6 +_,10 @@
+@@ -130,12 +_,18 @@
                  throw new IllegalStateException("BlockModel parent has to be a block model.");
              }
  
@@ -41,6 +41,14 @@
              this.parent = blockmodel;
          }
      }
+ 
+     @Override
+     public BakedModel bake(ModelBaker p_252120_, Function<Material, TextureAtlasSprite> p_250023_, ModelState p_251130_) {
++        if (this.customData.getCustomGeometry() != null)
++            return this.customData.getCustomGeometry().bake(customData, p_252120_, p_250023_, p_251130_);
+         return this.bake(p_250023_, p_251130_, true);
+     }
+ 
 @@ -229,7 +_,18 @@
          ItemTransform itemtransform5 = this.getTransform(ItemDisplayContext.GUI);
          ItemTransform itemtransform6 = this.getTransform(ItemDisplayContext.GROUND);

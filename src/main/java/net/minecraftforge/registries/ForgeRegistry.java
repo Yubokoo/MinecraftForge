@@ -244,9 +244,9 @@ public class ForgeRegistry<V> implements IForgeRegistryInternal<V>, IForgeRegist
         return wrapper;
     }
 
-    void onBindTags(Map<TagKey<V>, HolderSet.Named<V>> tags, Set<TagKey<V>> defaultedTags) {
+    void onBindTags(Map<TagKey<V>, HolderSet.Named<V>> tags) {
         if (this.tagManager != null)
-            this.tagManager.bind(tags, defaultedTags);
+            this.tagManager.bind(tags);
     }
 
     @NotNull

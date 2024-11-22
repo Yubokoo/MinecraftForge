@@ -23,18 +23,15 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-class ForgeRegistryTagManager<V> implements ITagManager<V>
-{
+class ForgeRegistryTagManager<V> implements ITagManager<V> {
     private final ForgeRegistry<V> owner;
     private volatile Map<TagKey<V>, ITag<V>> tags = new IdentityHashMap<>();
 
-    ForgeRegistryTagManager(ForgeRegistry<V> owner)
-    {
+    ForgeRegistryTagManager(ForgeRegistry<V> owner) {
         this.owner = owner;
     }
 
-    void bind(Map<TagKey<V>, HolderSet.Named<V>> holderTags, Set<TagKey<V>> defaultedTags)
-    {
+    void bind(Map<TagKey<V>, HolderSet.Named<V>> holderTags) {
         IdentityHashMap<TagKey<V>, ITag<V>> newTags = new IdentityHashMap<>(this.tags);
 
         // Forcefully unbind all pre-existing tags
@@ -49,13 +46,11 @@ class ForgeRegistryTagManager<V> implements ITagManager<V>
 
     @NotNull
     @Override
-    public ITag<V> getTag(@NotNull TagKey<V> name)
-    {
+    public ITag<V> getTag(@NotNull TagKey<V> name) {
         Objects.requireNonNull(name);
         ITag<V> tag = this.tags.get(name);
 
-        if (tag == null)
-        {
+        if (tag == null) {
             // Create empty tag
             tag = new ForgeRegistryTag<>(name);
 
@@ -72,16 +67,14 @@ class ForgeRegistryTagManager<V> implements ITagManager<V>
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @NotNull
     @Override
-    public Optional<IReverseTag<V>> getReverseTag(@NotNull V value)
-    {
+    public Optional<IReverseTag<V>> getReverseTag(@NotNull V value) {
         Objects.requireNonNull(value);
         // All Holders are implementors of IReverseTag
         return (Optional<IReverseTag<V>>) (Optional) this.owner.getHolder(value);
     }
 
     @Override
-    public boolean isKnownTagName(@NotNull TagKey<V> name)
-    {
+    public boolean isKnownTagName(@NotNull TagKey<V> name) {
         Objects.requireNonNull(name);
         ITag<V> tag = this.tags.get(name);
         return tag != null && tag.isBound();
@@ -89,37 +82,32 @@ class ForgeRegistryTagManager<V> implements ITagManager<V>
 
     @NotNull
     @Override
-    public Iterator<ITag<V>> iterator()
-    {
+    public Iterator<ITag<V>> iterator() {
         return Iterators.unmodifiableIterator(this.tags.values().iterator());
     }
 
     @NotNull
     @Override
-    public Stream<ITag<V>> stream()
-    {
+    public Stream<ITag<V>> stream() {
         return this.tags.values().stream();
     }
 
     @NotNull
     @Override
-    public Stream<TagKey<V>> getTagNames()
-    {
+    public Stream<TagKey<V>> getTagNames() {
         return this.tags.keySet().stream();
     }
 
     @NotNull
     @Override
-    public TagKey<V> createTagKey(@NotNull ResourceLocation location)
-    {
+    public TagKey<V> createTagKey(@NotNull ResourceLocation location) {
         Objects.requireNonNull(location);
         return TagKey.create(this.owner.getRegistryKey(), location);
     }
 
     @NotNull
     @Override
-    public TagKey<V> createOptionalTagKey(@NotNull ResourceLocation location, @NotNull Set<? extends Supplier<V>> defaults)
-    {
+    public TagKey<V> createOptionalTagKey(@NotNull ResourceLocation location, @NotNull Set<? extends Supplier<V>> defaults) {
         TagKey<V> tagKey = createTagKey(location);
 
         addOptionalTagDefaults(tagKey, defaults);
@@ -128,8 +116,7 @@ class ForgeRegistryTagManager<V> implements ITagManager<V>
     }
 
     @Override
-    public void addOptionalTagDefaults(@NotNull TagKey<V> name, @NotNull Set<? extends Supplier<V>> defaults)
-    {
+    public void addOptionalTagDefaults(@NotNull TagKey<V> name, @NotNull Set<? extends Supplier<V>> defaults) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(defaults);
 

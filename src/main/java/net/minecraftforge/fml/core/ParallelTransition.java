@@ -5,23 +5,23 @@
 
 package net.minecraftforge.fml.core;
 
-import cpw.mods.modlauncher.api.LamdbaExceptionUtils;
+import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.fml.IModStateTransition;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModLoadingStage;
 import net.minecraftforge.fml.ThreadSelector;
+import net.minecraftforge.fml.event.IModBusEvent;
 import net.minecraftforge.fml.event.lifecycle.ParallelDispatchEvent;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.BiFunction;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
 
-record ParallelTransition(ModLoadingStage stage, Class<? extends ParallelDispatchEvent> event) implements IModStateTransition {
+record  ParallelTransition(ModLoadingStage stage, BiFunction<ModContainer, ModLoadingStage, ParallelDispatchEvent> event) implements IModStateTransition {
+    @SuppressWarnings("unchecked")
     @Override
-    public Supplier<Stream<EventGenerator<?>>> eventFunctionStream() {
-        return () -> Stream.of(IModStateTransition.EventGenerator.fromFunction(LamdbaExceptionUtils.rethrowFunction((ModContainer mc) -> event.getConstructor(ModContainer.class, ModLoadingStage.class).newInstance(mc, stage))));
+    public <T extends Event & IModBusEvent> EventGenerator<T> eventFunction() {
+        return EventGenerator.fromFunction(mod -> (T)event.apply(mod, stage));
     }
 
     @Override
@@ -35,15 +35,5 @@ record ParallelTransition(ModLoadingStage stage, Class<? extends ParallelDispatc
             stage.getDeferredWorkQueue().runTasks();
             return t;
         }, e);
-    }
-
-    @Override
-    public BiFunction<Executor, ? extends EventGenerator<?>, CompletableFuture<Void>> preDispatchHook() {
-        return (t, f) -> CompletableFuture.completedFuture(null);
-    }
-
-    @Override
-    public BiFunction<Executor, ? extends EventGenerator<?>, CompletableFuture<Void>> postDispatchHook() {
-        return (t, f) -> CompletableFuture.completedFuture(null);
     }
 }

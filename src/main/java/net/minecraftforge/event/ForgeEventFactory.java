@@ -18,7 +18,6 @@ import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.chunk.storage.SerializableChunkData;
-import net.minecraftforge.client.event.ToastAddEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.Cancelable;
 import net.minecraftforge.eventbus.api.Event;
@@ -33,7 +32,6 @@ import com.mojang.brigadier.CommandDispatcher;
 
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.AdvancementProgress;
-import net.minecraft.client.gui.components.toasts.Toast;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -680,6 +678,7 @@ public final class ForgeEventFactory {
         return result == Result.DEFAULT ? level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING) : result == Result.ALLOW;
     }
 
+    @SuppressWarnings("removal")
     public static SaplingGrowTreeEvent blockGrowFeature(LevelAccessor level, RandomSource randomSource, BlockPos pos, @Nullable Holder<ConfiguredFeature<?, ?>> holder) {
         return fire(new SaplingGrowTreeEvent(level, randomSource, pos, holder));
     }
