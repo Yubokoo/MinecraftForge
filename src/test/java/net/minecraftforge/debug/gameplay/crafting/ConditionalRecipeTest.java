@@ -9,6 +9,7 @@ import java.util.concurrent.CompletableFuture;
 
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.HolderLookup.Provider;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.recipes.RecipeCategory;
 import net.minecraft.data.recipes.RecipeOutput;
@@ -20,6 +21,7 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.ItemTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -364,7 +366,7 @@ public class ConditionalRecipeTest extends BaseTestMod {
                 .save(this.output, rl("tag_empty_condition_doesnt_load"));
 
             ConditionalRecipe.builder()
-                .condition(tagEmpty(Tags.Items.EGGS))
+                .condition(tagEmpty(TagKey.create(Registries.ITEM, rl("empty_tag_for_testing"))))
                 .recipe(
                     shapeless(RecipeCategory.MISC, Blocks.DIAMOND_BLOCK)
                         .requires(Blocks.GOLD_ORE)

@@ -5,9 +5,6 @@
 
 package net.minecraftforge.fml;
 
-import net.minecraftforge.eventbus.api.Event;
-import net.minecraftforge.fml.event.IModBusEvent;
-import net.minecraftforge.fml.loading.progress.ProgressMeter;
 import net.minecraftforge.forgespi.language.IModFileInfo;
 import net.minecraftforge.forgespi.language.IModInfo;
 import net.minecraftforge.forgespi.language.ModFileScanData;
@@ -15,21 +12,15 @@ import net.minecraftforge.fml.loading.moddiscovery.ModFile;
 import net.minecraftforge.fml.loading.moddiscovery.ModFileInfo;
 import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
 import net.minecraftforge.forgespi.locating.IModFile;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -43,20 +34,21 @@ public class ModList {
     private static ModList INSTANCE;
     private final List<IModFileInfo> modFiles;
     private final List<IModInfo> sortedList;
-    private final Map<String, ModFileInfo> fileById;
+    private final Map<String, IModFileInfo> fileById;
     private List<ModContainer> mods;
     private Map<String, ModContainer> indexedMods;
     private List<ModFileScanData> modFileScanData;
     private List<ModContainer> sortedContainers;
 
     private ModList(final List<ModFile> modFiles, final List<ModInfo> sortedList) {
-        this.modFiles = modFiles.stream().map(ModFile::getModFileInfo).map(ModFileInfo.class::cast).collect(Collectors.toList());
-        this.sortedList = sortedList.stream().
-                map(ModInfo.class::cast).
-                collect(Collectors.toList());
-        this.fileById = this.modFiles.stream().map(IModFileInfo::getMods).flatMap(Collection::stream).
-                map(ModInfo.class::cast).
-                collect(Collectors.toMap(ModInfo::getModId, ModInfo::getOwningFile));
+        this.modFiles = modFiles.stream().map(ModFile::getModFileInfo).toList();
+        this.sortedList = sortedList.stream().map(IModInfo.class::cast).toList();
+        var byId = new HashMap<String, IModFileInfo>();
+        for (var file : this.modFiles) {
+            for (var mod : file.getMods())
+                byId.put(mod.getModId(), mod.getOwningFile());
+        }
+        this.fileById = Collections.unmodifiableMap(byId);
         CrashReportCallables.registerCrashCallable("Mod List", this::crashReport);
     }
 
@@ -95,54 +87,9 @@ public class ModList {
         return this.fileById.get(modid);
     }
 
-    <T extends Event & IModBusEvent> Function<Executor, CompletableFuture<Void>> futureVisitor(
-            final IModStateTransition.EventGenerator<T> eventGenerator,
-            final ProgressMeter progressBar,
-            final BiFunction<ModLoadingStage, Throwable, ModLoadingStage> stateChange) {
-        return executor -> gather(
-                this.mods.stream()
-                .map(mod -> ModContainer.buildTransitionHandler(mod, eventGenerator, progressBar, stateChange, executor))
-                .toList()
-        ).thenComposeAsync(ModList::completableFutureFromExceptionList, executor);
-    }
-    static CompletionStage<Void> completableFutureFromExceptionList(List<? extends Map.Entry<?, Throwable>> t) {
-        if (t.stream().noneMatch(e->e.getValue()!=null)) {
-            return CompletableFuture.completedFuture(null);
-        } else {
-            final List<Throwable> throwables = t.stream().filter(e -> e.getValue() != null).map(Map.Entry::getValue).toList();
-            CompletableFuture<Void> cf = new CompletableFuture<>();
-            final RuntimeException accumulator = new RuntimeException();
-            cf.completeExceptionally(accumulator);
-            for (Throwable exception : throwables) {
-                if (exception instanceof CompletionException) {
-                    exception = exception.getCause();
-                }
-                if (exception.getSuppressed().length != 0) {
-                    for (Throwable throwable : exception.getSuppressed()) {
-                        accumulator.addSuppressed(throwable);
-                    }
-                } else {
-                    accumulator.addSuppressed(exception);
-                }
-            }
-            return cf;
-        }
-    }
-
-    static <V> CompletableFuture<List<Map.Entry<V, Throwable>>> gather(List<? extends CompletableFuture<? extends V>> futures) {
-        List<Map.Entry<V, Throwable>> list = new ArrayList<>(futures.size());
-        CompletableFuture<?>[] results = new CompletableFuture[futures.size()];
-        for (var future : futures) {
-            int i = list.size();
-            list.add(null);
-            results[i] = future.whenComplete((result, exception) -> list.set(i, new AbstractMap.SimpleImmutableEntry<>(result, exception)));
-        }
-        return CompletableFuture.allOf(results).handle((r, th)->null).thenApply(res -> list);
-    }
-
     void setLoadedMods(final List<ModContainer> modContainers) {
         this.mods = modContainers;
-        this.sortedContainers = modContainers.stream().sorted(Comparator.comparingInt(c->sortedList.indexOf(c.getModInfo()))).toList();
+        this.sortedContainers = modContainers.stream().sorted(Comparator.comparingInt(c -> sortedList.indexOf(c.getModInfo()))).toList();
         this.indexedMods = modContainers.stream().collect(Collectors.toMap(ModContainer::getModId, Function.identity()));
     }
 
@@ -199,6 +146,10 @@ public class ModList {
 
     public void forEachModInOrder(Consumer<ModContainer> containerConsumer) {
         this.sortedContainers.forEach(containerConsumer);
+    }
+
+    public List<ModContainer> getLoadedMods() {
+        return this.sortedContainers;
     }
 
     public <T> Stream<T> applyForEachModContainer(Function<ModContainer, T> function) {

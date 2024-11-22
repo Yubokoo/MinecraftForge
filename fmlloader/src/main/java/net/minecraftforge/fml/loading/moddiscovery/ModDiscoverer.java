@@ -68,6 +68,7 @@ public class ModDiscoverer {
         }
     }
 
+    @SuppressWarnings("removal")
     public ModValidator discoverMods() {
         LOGGER.debug(LogMarkers.SCAN,"Scanning for mods and other resources to load. We know {} ways to find mods", modLocatorList.size());
         List<ModFile> loadedFiles = new ArrayList<>();

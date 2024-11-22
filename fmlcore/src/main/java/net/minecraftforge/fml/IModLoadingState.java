@@ -68,13 +68,15 @@ public interface IModLoadingState {
      * @return a transition task for this state
      * @see #buildTransition(Executor, Executor, ProgressMeter, Function, Function)
      */
-    default <T extends Event & IModBusEvent>
-    Optional<CompletableFuture<Void>> buildTransition(final Executor syncExecutor,
-                                                      final Executor parallelExecutor,
-                                                      final ProgressMeter progressBar) {
+    default <T extends Event & IModBusEvent> Optional<CompletableFuture<Void>> buildTransition(
+        final Executor syncExecutor,
+        final Executor parallelExecutor,
+        final ProgressMeter progressBar
+    ) {
         return buildTransition(syncExecutor, parallelExecutor, progressBar,
-                e -> CompletableFuture.runAsync(() -> {}, e),
-                e -> CompletableFuture.runAsync(() -> {}, e));
+            e -> CompletableFuture.completedFuture(null),
+            e -> CompletableFuture.completedFuture(null)
+        );
     }
 
     /**

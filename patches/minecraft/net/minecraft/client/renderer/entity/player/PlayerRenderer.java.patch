@@ -41,8 +41,8 @@
 +
 +    @Override
 +    public void render(PlayerRenderState state, PoseStack pose, MultiBufferSource source, int p_115313_) {
-+        if (net.minecraftforge.client.event.ForgeEventFactoryClient.onRenderLivingPre(state, this, pose, source, p_115313_)) return;
++        if (net.minecraftforge.client.event.ForgeEventFactoryClient.onRenderPlayerPre(state, this, pose, source, p_115313_)) return;
 +        super.render(state, pose, source, p_115313_);
-+        net.minecraftforge.client.event.ForgeEventFactoryClient.onRenderLivingPre(state, this, pose, source, p_115313_);
++        net.minecraftforge.client.event.ForgeEventFactoryClient.onRenderPlayerPost(state, this, pose, source, p_115313_);
      }
  }

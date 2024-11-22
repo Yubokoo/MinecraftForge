@@ -22,10 +22,7 @@ import net.minecraft.client.resources.ClientPackSource;
 import net.minecraft.client.resources.IndexedAssetSource;
 import net.minecraft.data.DataProvider;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.packs.FilePackResources;
 import net.minecraft.server.packs.PackLocationInfo;
-import net.minecraft.server.packs.FilePackResources.FileResourcesSupplier;
-import net.minecraft.server.packs.PathPackResources;
 import net.minecraft.server.packs.repository.FolderRepositorySource;
 import net.minecraft.server.packs.repository.PackSource;
 import net.minecraft.server.packs.repository.ServerPacksSource;
@@ -43,7 +40,6 @@ import net.minecraftforge.client.model.generators.ModelBuilder;
 import net.minecraftforge.data.event.GatherDataEvent;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.forgespi.language.IModFileInfo;
-import net.minecraftforge.resource.ResourcePackLoader;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 

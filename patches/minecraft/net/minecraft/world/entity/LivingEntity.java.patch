@@ -392,7 +392,7 @@
              FluidState fluidstate = this.level().getFluidState(this.blockPosition());
 -            if ((this.isInWater() || this.isInLava()) && this.isAffectedByFluids() && !this.canStandOnFluid(fluidstate)) {
 -                this.travelInFluid(p_21280_);
-+            if ((this.isInWater() || (this.isInFluidType(fluidstate) && fluidstate.getFluidType() != net.minecraftforge.common.ForgeMod.LAVA_TYPE.get())) && this.isAffectedByFluids() && !this.canStandOnFluid(fluidstate)) {
++            if ((this.isInWater() || this.isInLava() || this.isInFluidType(fluidstate)) && this.isAffectedByFluids() && !this.canStandOnFluid(fluidstate)) {
 +                this.travelInFluid(p_21280_, fluidstate);
              } else if (this.isFallFlying()) {
                  this.travelFallFlying();
@@ -406,7 +406,7 @@
          float f1 = f * 0.91F;
          Vec3 vec3 = this.handleRelativeFrictionAndCalculateMovement(p_362087_, f);
          double d0 = vec3.y;
-@@ -2214,11 +_,16 @@
+@@ -2214,10 +_,18 @@
          }
      }
  
@@ -420,11 +420,12 @@
          boolean flag = this.getDeltaMovement().y <= 0.0;
          double d0 = this.getY();
          double d1 = this.getEffectiveGravity();
--        if (this.isInWater()) {
-+        if (this.isInWater() || (this.isInFluidType(fluidstate) && !this.moveInFluid(fluidstate, p_362114_, d0))) {
++        if (this.isInFluidType(fluidstate) && this.moveInFluid(fluidstate, p_362114_, d0)) {
++            // Modded fluid handled it
++        } else
+         if (this.isInWater()) {
              float f = this.isSprinting() ? 0.9F : this.getWaterSlowDown();
              float f1 = 0.02F;
-             float f2 = (float)this.getAttributeValue(Attributes.WATER_MOVEMENT_EFFICIENCY);
 @@ -2235,6 +_,7 @@
                  f = 0.96F;
              }
@@ -469,7 +470,7 @@
              if (this.isInLava()) {
                  d3 = this.getFluidHeight(FluidTags.LAVA);
              } else {
-@@ -2737,15 +_,19 @@
+@@ -2737,15 +_,22 @@
              double d4 = this.getFluidJumpThreshold();
              if (!flag || this.onGround() && !(d3 > d4)) {
                  if (!this.isInLava() || this.onGround() && !(d3 > d4)) {
@@ -483,7 +484,10 @@
 +                    }
                  } else {
 -                    this.jumpInLiquid(FluidTags.LAVA);
++                    var old = this.getDeltaMovement();
 +                    this.jumpInFluid(net.minecraftforge.common.ForgeMod.LAVA_TYPE.get());
++                    if (this instanceof Player)
++                        System.out.println(old + " " + this.getDeltaMovement());
                  }
              } else {
 -                this.jumpInLiquid(FluidTags.WATER);

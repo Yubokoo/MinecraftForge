@@ -35,7 +35,7 @@
                  }
  
                  if (this.allTags.isBound()) {
-@@ -390,6 +_,26 @@
+@@ -390,6 +_,31 @@
          };
      }
  
@@ -49,6 +49,11 @@
 +    }
 +
 +    protected final void markKnown() {
++        // Some vanilla registries rely on others in some objects
++        // So we have to have a last-in ordering. Simplest way is to just remove and re-add our selves.
++        // A copy of this map is then captured after vanilla bootstraping to freeze it hopefully before Modder's change the order.
++        // https://github.com/MinecraftForge/MinecraftForge/issues/10179
++        KNOWN.remove(key().location());
 +        KNOWN.add(key().location());
 +    }
 +

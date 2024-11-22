@@ -9,6 +9,7 @@ import com.mojang.logging.LogUtils;
 import net.minecraftforge.fml.loading.moddiscovery.ModFile;
 import net.minecraftforge.forgespi.language.IModInfo;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
+import org.jetbrains.annotations.ApiStatus;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -23,16 +24,18 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static net.minecraftforge.fml.loading.LogMarkers.LOADING;
 
-public class UniqueModListBuilder
-{
+@ApiStatus.Internal
+@Deprecated(since = "1.21.3", forRemoval = true) // TODO: [FML][Loading] Convert to package private in 1.22
+public class UniqueModListBuilder {
     private final static Logger LOGGER = LogUtils.getLogger();
 
     private final List<ModFile> modFiles;
 
-    public UniqueModListBuilder(final List<ModFile> modFiles) {this.modFiles = modFiles;}
+    public UniqueModListBuilder(final List<ModFile> modFiles) {
+        this.modFiles = modFiles;
+    }
 
-    public UniqueModListData buildUniqueList()
-    {
+    public UniqueModListData buildUniqueList() {
         List<ModFile> uniqueModList;
         List<ModFile> uniqueLibListWithVersion;
 
@@ -139,5 +142,4 @@ public class UniqueModListBuilder
     }
 
     public record UniqueModListData(List<ModFile> modFiles, Map<String, List<ModFile>> modFilesByFirstId) {}
-
 }

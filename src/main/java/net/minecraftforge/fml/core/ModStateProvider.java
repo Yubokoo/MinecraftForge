@@ -34,15 +34,13 @@ public class ModStateProvider implements IModStateProvider {
      *
      * @see ModLoadingPhase#ERROR
      */
-    final ModLoadingState ERROR = ModLoadingState.empty("ERROR", "",
-            ModLoadingPhase.ERROR);
+    public static final ModLoadingState ERROR = ModLoadingState.of("ERROR", ModLoadingPhase.ERROR).empty();
 
     /**
      * First {@linkplain ModLoadingPhase#GATHER gathering state}, for the validation of the mod list.
      * TODO: figure out where this is used and why this exists instead of CONSTRUCT being the first state
      */
-    private final ModLoadingState VALIDATE = ModLoadingState.empty("VALIDATE", "",
-            ModLoadingPhase.GATHER);
+    public static final ModLoadingState VALIDATE = ModLoadingState.of("VALIDATE", ModLoadingPhase.GATHER).empty();
 
     /**
      * {@linkplain ModLoadingPhase#GATHER Gathering state} after {@linkplain #VALIDATE validation}, for the construction
@@ -51,22 +49,20 @@ public class ModStateProvider implements IModStateProvider {
      * @see FMLConstructModEvent
      * @see ModLoadingStage#CONSTRUCT
      */
-    final ModLoadingState CONSTRUCT = ModLoadingState.withTransition("CONSTRUCT", "VALIDATE",
-            ml -> "Constructing %d mods".formatted(ml.size()),
-            ModLoadingPhase.GATHER,
-            new ParallelTransition(ModLoadingStage.CONSTRUCT, FMLConstructModEvent.class));
+    public static final ModLoadingState CONSTRUCT = ModLoadingState.of("CONSTRUCT", ModLoadingPhase.GATHER)
+        .after(VALIDATE)
+        .message(ml -> "Constructing %d mods".formatted(ml.size()))
+        .withTransition(new ParallelTransition(ModLoadingStage.CONSTRUCT, FMLConstructModEvent::new));
 
     /**
      * First {@linkplain ModLoadingPhase#LOAD loading state}, for loading of the common and (if applicable)
      * {@linkplain Dist#CLIENT client-side} mod configurations.
      */
-    private final ModLoadingState CONFIG_LOAD = ModLoadingState.withInline("CONFIG_LOAD", "",
-            ModLoadingPhase.LOAD,
-            ml -> {
-                DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
-                        () -> () -> ConfigTracker.INSTANCE.loadConfigs(ModConfig.Type.CLIENT, FMLPaths.CONFIGDIR.get()));
-                ConfigTracker.INSTANCE.loadConfigs(ModConfig.Type.COMMON, FMLPaths.CONFIGDIR.get());
-            });
+    public static final ModLoadingState CONFIG_LOAD = ModLoadingState.of("CONFIG_LOAD", ModLoadingPhase.LOAD)
+        .withInline(ml -> {
+            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ConfigTracker.INSTANCE.loadConfigs(ModConfig.Type.CLIENT, FMLPaths.CONFIGDIR.get()));
+            ConfigTracker.INSTANCE.loadConfigs(ModConfig.Type.COMMON, FMLPaths.CONFIGDIR.get());
+        });
 
     /**
      * {@linkplain ModLoadingPhase#LOAD Loading state} after {@linkplain #CONFIG_LOAD configuration loading}, for
@@ -75,9 +71,9 @@ public class ModStateProvider implements IModStateProvider {
      * @see FMLCommonSetupEvent
      * @see ModLoadingStage#COMMON_SETUP
      */
-    private final ModLoadingState COMMON_SETUP = ModLoadingState.withTransition("COMMON_SETUP", "CONFIG_LOAD",
-            ModLoadingPhase.LOAD,
-            new ParallelTransition(ModLoadingStage.COMMON_SETUP, FMLCommonSetupEvent.class));
+    public static  final ModLoadingState COMMON_SETUP = ModLoadingState.of("COMMON_SETUP", ModLoadingPhase.LOAD)
+        .after(CONFIG_LOAD)
+        .withTransition(new ParallelTransition(ModLoadingStage.COMMON_SETUP, FMLCommonSetupEvent::new));
 
     /**
      * {@linkplain ModLoadingPhase#LOAD Loading state} after {@linkplain #COMMON_SETUP common setup}, for side-specific
@@ -87,10 +83,14 @@ public class ModStateProvider implements IModStateProvider {
      * @see FMLDedicatedServerSetupEvent
      * @see ModLoadingStage#SIDED_SETUP
      */
-    private final ModLoadingState SIDED_SETUP = ModLoadingState.withTransition("SIDED_SETUP", "COMMON_SETUP",
-            ModLoadingPhase.LOAD,
-            new ParallelTransition(ModLoadingStage.SIDED_SETUP,
-                    DistExecutor.unsafeRunForDist(()->()-> FMLClientSetupEvent.class, ()->()-> FMLDedicatedServerSetupEvent.class)));
+    public static  final ModLoadingState SIDED_SETUP = ModLoadingState.of("SIDED_SETUP", ModLoadingPhase.LOAD)
+        .after(COMMON_SETUP)
+        .withTransition(new ParallelTransition(ModLoadingStage.SIDED_SETUP,
+            DistExecutor.unsafeRunForDist(
+                () -> () -> FMLClientSetupEvent::new,
+                () -> () -> FMLDedicatedServerSetupEvent::new
+            )
+        ));
 
     /**
      * First {@linkplain ModLoadingPhase#COMPLETE completion state}, for enqueuing {@link net.minecraftforge.fml.InterModComms}
@@ -99,9 +99,8 @@ public class ModStateProvider implements IModStateProvider {
      * @see InterModEnqueueEvent
      * @see ModLoadingStage#ENQUEUE_IMC
      */
-    private final ModLoadingState ENQUEUE_IMC = ModLoadingState.withTransition("ENQUEUE_IMC", "",
-            ModLoadingPhase.COMPLETE,
-            new ParallelTransition(ModLoadingStage.ENQUEUE_IMC, InterModEnqueueEvent.class));
+    public static  final ModLoadingState ENQUEUE_IMC = ModLoadingState.of("ENQUEUE_IMC", ModLoadingPhase.COMPLETE)
+        .withTransition(new ParallelTransition(ModLoadingStage.ENQUEUE_IMC, InterModEnqueueEvent::new));
 
     /**
      * {@linkplain ModLoadingPhase#COMPLETE Completion state} after {@linkplain #ENQUEUE_IMC}, for processing of messages
@@ -110,9 +109,9 @@ public class ModStateProvider implements IModStateProvider {
      * @see InterModProcessEvent
      * @see ModLoadingStage#PROCESS_IMC
      */
-    private final ModLoadingState PROCESS_IMC = ModLoadingState.withTransition("PROCESS_IMC", "ENQUEUE_IMC",
-            ModLoadingPhase.COMPLETE,
-            new ParallelTransition(ModLoadingStage.PROCESS_IMC, InterModProcessEvent.class));
+    public static  final ModLoadingState PROCESS_IMC = ModLoadingState.of("PROCESS_IMC", ModLoadingPhase.COMPLETE)
+        .after(ENQUEUE_IMC)
+        .withTransition(new ParallelTransition(ModLoadingStage.PROCESS_IMC, InterModProcessEvent::new));
 
     /**
      * {@linkplain ModLoadingPhase#COMPLETE Completion state} after {@linkplain #PROCESS_IMC}, marking the completion
@@ -121,18 +120,17 @@ public class ModStateProvider implements IModStateProvider {
      * @see FMLLoadCompleteEvent
      * @see ModLoadingStage#COMPLETE
      */
-    private final ModLoadingState COMPLETE = ModLoadingState.withTransition("COMPLETE", "PROCESS_IMC",
-            ml -> "completing load of %d mods".formatted(ml.size()),
-            ModLoadingPhase.COMPLETE,
-            new ParallelTransition(ModLoadingStage.COMPLETE, FMLLoadCompleteEvent.class));
+    public static  final ModLoadingState COMPLETE = ModLoadingState.of("COMPLETE", ModLoadingPhase.COMPLETE)
+        .after(PROCESS_IMC)
+        .message(ml -> "completing load of %d mods".formatted(ml.size()))
+        .withTransition(new ParallelTransition(ModLoadingStage.COMPLETE, FMLLoadCompleteEvent::new));
 
     /**
      * The marker state for the completion of the full mod loading process.
      *
      * @see ModLoadingStage#DONE
      */
-    private final ModLoadingState DONE = ModLoadingState.empty("DONE", "",
-            ModLoadingPhase.DONE);
+    public static final ModLoadingState DONE = ModLoadingState.of("DONE", ModLoadingPhase.DONE).empty();
 
     @Override
     public List<IModLoadingState> getAllStates() {
