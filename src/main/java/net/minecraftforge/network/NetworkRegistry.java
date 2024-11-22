@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-
 package net.minecraftforge.network;
 
 import net.minecraft.network.Connection;
@@ -43,19 +42,17 @@ public class NetworkRegistry {
     static final Logger LOGGER = LogManager.getLogger();
     static final Marker NETREGISTRY = MarkerManager.getMarker("NETREGISTRY");
 
-    // Use ConcurrentHashMap for thread safety
     private static final Map<ResourceLocation, NetworkInstance> instances = new ConcurrentHashMap<>();
     private static final Map<ResourceLocation, NetworkInstance> byName = new ConcurrentHashMap<>();
 
-    // Use volatile to ensure visibility across threads
     private static volatile boolean lock = false;
 
     public static boolean acceptsVanillaClientConnections() {
-        return listRejectedVanillaMods(NetworkInstance::clientAcceptedVersions).isEmpty() &&
-                DataPackRegistriesHooks.getSyncedCustomRegistries().isEmpty();    }
+        return listRejectedVanillaMods(n -> n.clientAcceptedVersions).isEmpty() && DataPackRegistriesHooks.getSyncedCustomRegistries().isEmpty();
+    }
 
     public static boolean canConnectToVanillaServer() {
-        return listRejectedVanillaMods(NetworkInstance::serverAcceptedVersions).isEmpty();
+        return listRejectedVanillaMods(n -> n.serverAcceptedVersions).isEmpty();
     }
 
     @Nullable
@@ -63,32 +60,16 @@ public class NetworkRegistry {
         return byName.get(resourceLocation);
     }
 
-    // Lists mods that reject vanilla connections
-    static List<String> listRejectedVanillaMods(Function<NetworkInstance, VersionTest> testFunction) {
-        return instances.values().stream()
-                .filter(net -> !testFunction.apply(net).accepts(VersionTest.Status.VANILLA, -1))
-                .peek(net -> LOGGER.debug("Channel '{}' : Vanilla acceptance test: REJECTED", net.getChannelName()))
-                .map(net -> net.getChannelName().toString())
-                .collect(Collectors.toList());
-    }
-
-    private static void logDebug(String message, Object... params) {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(NETREGISTRY, message, params);
-        }
-    }
-
-    private static void logError(String message, Object... params) {
-        LOGGER.error(NETREGISTRY, message, params);
-    }
-
     static Map<ResourceLocation, ServerStatusPing.ChannelData> buildChannelVersionsForListPing() {
-        return instances.entrySet().stream()
-                .collect(Collectors.toConcurrentMap(Map.Entry::getKey, e -> e.getValue().pingData));
+        var ret = new ConcurrentHashMap<ResourceLocation, ServerStatusPing.ChannelData>();
+        for (var channel : instances.values()) {
+            ret.put(channel.getChannelName(), channel.pingData);
+        }
+        return ret;
     }
 
     static List<String> listRejectedVanillaMods(Function<NetworkInstance, VersionTest> testFunction) {
-        List<String> rejectedChannels = (List<String>) instances.values().stream();
+        var results = new ArrayList<String>();
         for (var net : instances.values()) {
             boolean test = testFunction.apply(net).accepts(VersionTest.Status.VANILLA, -1);
             if (LOGGER.isDebugEnabled()) {
@@ -199,7 +180,7 @@ public class NetworkRegistry {
         var channel = connection.channel();
         for (var inst : instances.values()) {
             if (inst.attributes != null)
-                inst.attributes.forEach((k, v) -> ((Attribute<Object>)channel.attr(k)).compareAndSet(null, v.apply(connection)));
+                inst.attributes.forEach((k, v) -> ((Attribute<Object>) channel.attr(k)).compareAndSet(null, v.apply(connection)));
             if (inst.channelHandler != null)
                 inst.channelHandler.accept(connection);
         }
@@ -245,33 +226,4 @@ public class NetworkRegistry {
         NetworkRegistry.LOGGER.error(NetworkRegistry.NETREGISTRY, message);
         throw new IllegalArgumentException(message);
     }
-
-    // Creates and registers a NetworkInstance if not already present, throws if duplicate
-    public static NetworkInstance createInstance(ResourceLocation name, int networkProtocolVersion,
-                                                 VersionTest clientAcceptedVersions, VersionTest serverAcceptedVersions) {
-        if (lock) {
-            throw new IllegalStateException("Attempted to create instance after registry lock.");
-        }
-
-        NetworkInstance networkInstance = new NetworkInstance(name, networkProtocolVersion, clientAcceptedVersions, serverAcceptedVersions);
-        NetworkInstance oldInstance = instances.putIfAbsent(name, networkInstance);
-
-        if (oldInstance != null) {
-            throw new IllegalArgumentException("NetworkDirection Channel {" + name + "} already registered");
-        }
-
-        return networkInstance;
-    }
-
-    // Registers a new instance in byName map if not already registered, respecting lock
-    static void register(NetworkInstance instance, ResourceLocation name) {
-        if (lock) {
-            throw new IllegalStateException("Cannot register the NetworkInstance with name " + name + " after the registry lock is enabled. Complete all registrations beforehand.");
-        }
-        if (byName.putIfAbsent(name, instance) != null) {
-            throw new IllegalArgumentException("Payload name " + name + " is already registered. Ensure each name is unique.");
-        }
-    }
-
-
 }
